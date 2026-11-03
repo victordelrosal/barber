@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PRIORITY — Barber Membership & Booking</title>
+  <!-- Google Fonts: Playfair Display + Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            charcoal: {
+              950: '#0E100F',
+              900: '#171918',
+              850: '#1E2120',
+              800: '#262928',
+              700: '#343836',
+            },
+            ivory: {
+              50: '#FAF8F5',
+              100: '#F7F4EE',
+              200: '#EFECE4',
+              300: '#E4DFD5',
+            },
+            copper: {
+              300: '#D5A480',
+              400: '#C88D63',
+              500: '#B77C52',
+              600: '#9E6640',
+              700: '#7E4E2E',
+            },
+            stoneBorder: '#2B2F2D',
+            sage: '#849084',
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Mobile app viewport container styling */
+    body {
+      background-color: #0c0d0d;
+      color: #F7F4EE;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #171918;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2b2f2d;
+      border-radius: 9999px;
+    }
+
+    /* Metallic badge sheen effect */
+    .copper-sheen {
+      background: linear-gradient(135deg, #C88D63 0%, #B77C52 45%, #e1ad87 50%, #B77C52 60%, #8E5A35 100%);
+    }
+
+    .badge-copper {
+      background: linear-gradient(135deg, rgba(183, 124, 82, 0.15) 0%, rgba(200, 141, 99, 0.25) 100%);
+      border: 1px solid rgba(200, 141, 99, 0.4);
+    }
+
+    /* Micro animations */
+    .screen-fade {
+      animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Modal slide up */
+    .modal-sheet {
+      animation: slideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 md:py-6 md:px-4">
+
+  <!-- Desktop Bezel Container (Strict 390px-430px smartphone canvas) -->
+  <div class="relative w-full max-w-[420px] h-[100dvh] md:h-[880px] bg-charcoal-900 md:rounded-[40px] md:border md:border-stoneBorder shadow-2xl overflow-hidden flex flex-col justify-between">
+    
+    <!-- Top System Bar Mockup -->
+    <header class="flex-none px-6 pt-3 pb-2 flex items-center justify-between text-xs text-neutral-400 z-30 bg-charcoal-900/90 backdrop-blur-md border-b border-stoneBorder/40">
+      <div class="flex items-center gap-1.5 font-medium tracking-tight">
+        <span id="systemTime" class="text-ivory-100 font-semibold">10:42</span>
+        <span class="text-neutral-500 text-[10px]">Dublin 2</span>
+      </div>
+
+      <!-- Quick Demo Control / Reset Helper -->
+      <div class="flex items-center gap-2">
+        <button id="quickRoleToggle" onclick="toggleMemberState()" class="px-2.5 py-1 text-[11px] rounded-full border border-stoneBorder bg-charcoal-800 text-copper-300 hover:text-ivory-50 active:scale-95 transition-all flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" id="membershipDot"></span>
+          <span id="roleBadgeText">Member Active</span>
+        </button>
+        <button onclick="resetDemoState()" title="Reset demo data" class="text-neutral-500 hover:text-neutral-300 p-1 text-[11px] transition-colors">
+          ↺
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Screen Content Area -->
+    <main id="appContent" class="flex-1 overflow-y-auto overflow-x-hidden relative pb-20">
+      <!-- Injected by renderCurrentScreen() -->
+    </main>
+
+    <!-- Bottom Navigation Bar (Persistent for Member & General browsing) -->
+    <nav id="bottomNav" class="flex-none px-4 py-2.5 bg-charcoal-900/95 backdrop-blur-lg border-t border-stoneBorder/80 z-20 flex justify-around items-center">
+      <button onclick="navigate('home')" id="navHome" class="flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-copper-400 font-medium">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span id="navHomeLabel">Home</span>
+      </button>
+
+      <button onclick="navigate('booking')" id="navBooking" class="flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-neutral-400 hover:text-ivory-100 font-medium">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <span>Priority Slots</span>
+      </button>
+
+      <button onclick="navigate('membership')" id="navMembership" class="flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-neutral-400 hover:text-ivory-100 font-medium">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+        </svg>
+        <span id="navMemLabel">Membership</span>
+      </button>
+    </nav>
+
+    <!-- Modal Backdrop for Modals & Bottom Drawers -->
+    <div id="modalContainer" class="hidden absolute inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-end justify-center">
+      <div id="modalInner" class="w-full bg-charcoal-850 border-t border-stoneBorder rounded-t-[28px] p-6 text-ivory-100 modal-sheet max-h-[85vh] overflow-y-auto">
+        <!-- Injected modal content -->
+      </div>
+    </div>
+
+    <!-- Notification Toast Element -->
+    <div id="toastNotification" class="absolute top-14 left-4 right-4 z-50 transform -translate-y-20 opacity-0 pointer-events-none transition-all duration-300 ease-out bg-charcoal-800 border border-copper-400/40 text-ivory-100 text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2 h-2 rounded-full bg-copper-400 animate-ping"></span>
+        <span id="toastMessage" class="font-medium text-ivory-50">Notification</span>
+      </div>
+      <span class="text-neutral-400 text-[10px]">Just now</span>
+    </div>
+
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    /* =====================================================================
+       DEFAULT SEED STATE & STORAGE
+       ===================================================================== */
+    const STORAGE_KEY = 'priority_barber_alpha_state_v1';
+
+    const DEFAULT_STATE = {
+      customer: {
+        name: "Alex Murphy",
+        email: "alex.murphy@dublin.ie",
+        isMember: true, // Default to true so user sees signature experience immediately
+        membershipStatus: "active", // active | paused | cancelled
+        preferredBarberId: "barber-1",
+        rhythmWeeks: 4, // 2, 3, 4, 5, 6
+        preferredSlotTime: "Saturday Morning",
+        nextRenewalDate: "15 Dec 2026",
+        simulatedMonthlyFee: 5.00,
+        haircutStandardPrice: 25.00
+      },
+      currentAppointment: {
+        id: "apt-101",
+        dateString: "Saturday, 21 Nov 2026",
+        isoDate: "2026-11-21",
+        time: "10:00 AM",
+        barberId: "barber-1",
+        barberName: "Daniel Ross",
+        role: "Master Barber",
+        isPrioritySlot: true,
+        status: "confirmed"
+      },
+      barbers: [
+        {
+          id: "barber-1",
+          name: "Daniel Ross",
+          title: "Master Barber & Shop Co-Founder",
+          experience: "12 yrs experience · Dublin Southside",
+          image: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=400&q=80",
+          initials: "DR"
+        },
+        {
+          id: "barber-2",
+          name: "Sean Kelly",
+          title: "Senior Stylist & Texture Specialist",
+          experience: "8 yrs experience · London & Dublin",
+          image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80",
+          initials: "SK"
+        }
+      ],
+      // Weekly schedule slots for the Priority booking screen
+      bookingDays: [
+        { dayLabel: "Thu", dateNum: "19", fullDate: "Thursday, 19 Nov 2026" },
+        { dayLabel: "Fri", dateNum: "20", fullDate: "Friday, 20 Nov 2026" },
+        { dayLabel: "Sat", dateNum: "21", fullDate: "Saturday, 21 Nov 2026", isSelected: true },
+        { dayLabel: "Tue", dateNum: "24", fullDate: "Tuesday, 24 Nov 2026" },
+        { dayLabel: "Wed", dateNum: "25", fullDate: "Wednesday, 25 Nov 2026" }
+      ],
+      slotsCatalog: [
+        { id: "slot-1", time: "09:30 AM", barberId: "barber-1", isPriority: true, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-2", time: "10:00 AM", barberId: "barber-1", isPriority: true, booked: true, bookedByMe: true, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-3", time: "11:15 AM", barberId: "barber-1", isPriority: false, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-4", time: "01:30 PM", barberId: "barber-1", isPriority: true, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-5", time: "03:45 PM", barberId: "barber-1", isPriority: false, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-6", time: "10:30 AM", barberId: "barber-2", isPriority: true, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-7", time: "12:00 PM", barberId: "barber-2", isPriority: false, booked: false, date: "Saturday, 21 Nov 2026" },
+        { id: "slot-8", time: "02:15 PM", barberId: "barber-2", isPriority: true, booked: false, date: "Saturday, 21 Nov 2026" },
+        // Slots on Friday
+        { id: "slot-9", time: "11:00 AM", barberId: "barber-1", isPriority: true, booked: false, date: "Friday, 20 Nov 2026" },
+        { id: "slot-10", time: "04:30 PM", barberId: "barber-1", isPriority: false, booked: false, date: "Friday, 20 Nov 2026" },
+        { id: "slot-11", time: "02:00 PM", barberId: "barber-2", isPriority: true, booked: false, date: "Friday, 20 Nov 2026" }
+      ]
+    };
+
+    let appState = loadState();
+    let currentActiveScreen = appState.customer.isMember ? 'home' : 'landing'; // default route
+    let selectedBookingDate = "Saturday, 21 Nov 2026";
+    let pendingOnboarding = {
+      rhythmWeeks: 4,
+      barberId: "barber-1",
+      preferredDayTime: "Saturday Morning"
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {
+        console.warn("Storage not available, defaulting");
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {}
+      updateSystemHeader();
+    }
+
+    function resetDemoState() {
+      appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      saveState();
+      showToast("Demo state reloaded to initial state");
+      navigate(appState.customer.isMember ? 'home' : 'landing');
+    }
+
+    function toggleMemberState() {
+      appState.customer.isMember = !appState.customer.isMember;
+      if (appState.customer.isMember) {
+        appState.customer.membershipStatus = 'active';
+        showToast("Switched to: Active Priority Member");
+        navigate('home');
+      } else {
+        appState.customer.membershipStatus = 'cancelled';
+        showToast("Switched to: Non-Member / Visitor View");
+        navigate('landing');
+      }
+      saveState();
+    }
+
+    function updateSystemHeader() {
+      const isMember = appState.customer.isMember && appState.customer.membershipStatus === 'active';
+      const dot = document.getElementById('membershipDot');
+      const badgeText = document.getElementById('roleBadgeText');
+      const navHomeLabel = document.getElementById('navHomeLabel');
+
+      if (isMember) {
+        dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+        badgeText.textContent = "Priority Member";
+        navHomeLabel.textContent = "My Priority";
+      } else {
+        dot.className = "w-1.5 h-1.5 rounded-full bg-neutral-500";
+        badgeText.textContent = "Visitor";
+        navHomeLabel.textContent = "Shop";
+      }
+    }
+
+    /* =====================================================================
+       ROUTER & NAVIGATION
+       ===================================================================== */
+    function navigate(screenName) {
+      currentActiveScreen = screenName;
+      closeModal();
+      renderCurrentScreen();
+      updateNavHighlight(screenName);
+      // scroll to top
+      document.getElementById('appContent').scrollTop = 0;
+    }
+
+    function updateNavHighlight(screenName) {
+      const navHome = document.getElementById('navHome');
+      const navBooking = document.getElementById('navBooking');
+      const navMembership = document.getElementById('navMembership');
+
+      // reset
+      [navHome, navBooking, navMembership].forEach(btn => {
+        btn.className = "flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-neutral-400 hover:text-ivory-100 font-medium";
+      });
+
+      if (screenName === 'home' || screenName === 'landing') {
+        navHome.className = "flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-copper-400 font-semibold";
+      } else if (screenName === 'booking') {
+        navBooking.className = "flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-copper-400 font-semibold";
+      } else if (screenName === 'membership' || screenName === 'join-rhythm' || screenName === 'checkout') {
+        navMembership.className = "flex flex-col items-center justify-center py-1 px-4 rounded-xl text-xs transition-all text-copper-400 font-semibold";
+      }
+    }
+
+    /* =====================================================================
+       VIEW RENDERING CONTROLLER
+       ===================================================================== */
+    function renderCurrentScreen() {
+      const container = document.getElementById('appContent');
+      updateSystemHeader();
+
+      switch (currentActiveScreen) {
+        case 'landing':
+          container.innerHTML = renderLandingScreen();
+          break;
+        case 'membership':
+          container.innerHTML = renderMembershipPropositionScreen();
+          break;
+        case 'join-rhythm':
+          container.innerHTML = renderChooseRhythmScreen();
+          break;
+        case 'checkout':
+          container.innerHTML = renderCheckoutScreen();
+          break;
+        case 'home':
+          // If non-member attempts to visit home directly, show landing or member home
+          if (!appState.customer.isMember) {
+            container.innerHTML = renderLandingScreen();
+          } else {
+            container.innerHTML = renderMemberHomeScreen();
+          }
+          break;
+        case 'booking':
+          container.innerHTML = renderPriorityBookingScreen();
+          break;
+        default:
+          container.innerHTML = renderMemberHomeScreen();
+      }
+    }
+
+    /* =====================================================================
+       SCREEN 1: WELCOME & BARBERSHOP LANDING
+       ===================================================================== */
+    function renderLandingScreen() {
+      return `
+        <div class="screen-fade pb-10">
+          <!-- Hero Header Image -->
+          <div class="relative h-64 w-full overflow-hidden bg-charcoal-950">
+            <img 
+              src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80" 
+              alt="Grafton Grooming Co." 
+              class="w-full h-full object-cover opacity-45 scale-105 filter brightness-90 contrast-125"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-charcoal-900 via-charcoal-900/60 to-transparent"></div>
+            
+            <div class="absolute top-4 left-5 right-5 flex justify-between items-center">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wider uppercase bg-charcoal-900/80 border border-stoneBorder text-copper-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-copper-400"></span> Dublin 2
+              </span>
+              <span class="text-xs text-neutral-400 tracking-wide">Grafton Quarter</span>
+            </div>
+
+            <div class="absolute bottom-5 left-5 right-5">
+              <h1 class="font-serif text-2xl font-bold tracking-tight text-ivory-50 leading-tight">
+                The Grafton Grooming Co.
+              </h1>
+              <p class="text-xs text-neutral-300 mt-1 font-light">
+                Your barber. Your schedule. Your priority.
+              </p>
+            </div>
+          </div>
+
+          <!-- Content Body -->
+          <div class="px-5 pt-4 space-y-6">
+
+            <!-- Price disclosure card -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-charcoal-850 p-3.5 rounded-2xl border border-stoneBorder/80">
+                <span class="text-[11px] uppercase tracking-wider text-neutral-400 block mb-1">Standard Cut</span>
+                <div class="flex items-baseline gap-1">
+                  <span class="text-xl font-bold font-serif text-ivory-100">€25</span>
+                  <span class="text-[11px] text-neutral-400">/visit</span>
+                </div>
+                <span class="text-[10px] text-neutral-500 block mt-1">Booked one-by-one</span>
+              </div>
+
+              <div class="badge-copper p-3.5 rounded-2xl relative overflow-hidden">
+                <span class="text-[10px] uppercase font-semibold tracking-wider text-copper-300 block mb-1 flex items-center justify-between">
+                  Priority Club
+                  <span class="text-[9px] bg-copper-500/20 text-copper-300 px-1.5 py-0.5 rounded">Popular</span>
+                </span>
+                <div class="flex items-baseline gap-1">
+                  <span class="text-xl font-bold font-serif text-copper-300">€5</span>
+                  <span class="text-[11px] text-copper-300/80">/month</span>
+                </div>
+                <span class="text-[10px] text-neutral-300 block mt-1">First access & zero hassle</span>
+              </div>
+            </div>
+
+            <!-- Value Proposition Statement -->
+            <div class="bg-charcoal-850/60 p-4 rounded-2xl border border-stoneBorder/70 text-xs text-neutral-300 space-y-2.5">
+              <div class="flex items-start gap-2.5">
+                <div class="w-5 h-5 rounded-full bg-copper-500/10 text-copper-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-serif font-bold">1</div>
+                <div>
+                  <span class="font-medium text-ivory-100 block">Never compete for peak weekend slots</span>
+                  <span class="text-neutral-400 text-[11px]">Members get 7-day advance booking windows ahead of general walk-ins.</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <div class="w-5 h-5 rounded-full bg-copper-500/10 text-copper-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-serif font-bold">2</div>
+                <div>
+                  <span class="font-medium text-ivory-100 block">Effortless recurring rhythm</span>
+                  <span class="text-neutral-400 text-[11px]">Choose 2, 3, 4, 5 or 6 weeks. Reschedule or skip in one tap without penalty.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barbers Showcase -->
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-semibold tracking-wider uppercase text-neutral-400">Our Master Barbers</span>
+                <span class="text-[11px] text-neutral-500">2 Specialists on duty</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                ${appState.barbers.map(b => `
+                  <div class="bg-charcoal-850 p-3 rounded-2xl border border-stoneBorder flex flex-col items-center text-center">
+                    <img src="${b.image}" alt="${b.name}" class="w-14 h-14 rounded-full object-cover mb-2 border border-stoneBorder" />
+                    <span class="text-xs font-semibold text-ivory-100">${b.name}</span>
+                    <span class="text-[10px] text-copper-400">${b.title.split('&')[0]}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="space-y-2.5 pt-2">
+              <button onclick="navigate('membership')" class="w-full py-3.5 px-4 rounded-2xl copper-sheen text-charcoal-950 font-semibold text-sm shadow-lg shadow-copper-900/30 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                <span>Join Priority — €5/month</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              </button>
+
+              <button onclick="navigate('booking')" class="w-full py-3.5 px-4 rounded-2xl bg-charcoal-850 hover:bg-charcoal-800 text-ivory-200 border border-stoneBorder font-medium text-xs active:scale-[0.98] transition-transform">
+                Book Standard Haircut (€25 once-off)
+              </button>
+            </div>
+
+            <p class="text-[11px] text-center text-neutral-500 pt-1">
+              Haircuts charged separately (€25) on the day. Cancel or pause anytime.
+            </p>
+
+          </div>
+        </div>
+      `;
+    }
+
+    /* =====================================================================
+       SCREEN 2: MEMBERSHIP PROPOSITION
+       ===================================================================== */
+    function renderMembershipPropositionScreen() {
+      return `
+        <div class="screen-fade px-5 py-4 pb-12 space-y-6">
+          <!-- Back button & title -->
+          <div class="flex items-center justify-between">
+            <button onclick="navigate('landing')" class="text-xs text-neutral-400 hover:text-ivory-100 flex items-center gap-1 py-1">
+              ← Back
+            </button>
+            <span class="text-[11px] uppercase tracking-widest text-copper-400 font-semibold">Priority Club</span>
+            <div class="w-6"></div>
+          </div>
+
+          <div class="text-center pt-1">
+            <h2 class="font-serif text-2xl font-bold text-ivory-50 tracking-tight">
+              A bespoke rhythm for your hair.
+            </h2>
+            <p class="text-xs text-neutral-400 mt-1.5 max-w-xs mx-auto">
+              Never re-organise haircuts from scratch. Predictable perfection without the friction.
+            </p>
+          </div>
+
+          <!-- 3 Pillars -->
+          <div class="space-y-3.5">
+            <!-- Pillar 1 -->
+            <div class="bg-charcoal-850 p-4 rounded-2xl border border-stoneBorder/90">
+              <div class="flex items-center gap-3 mb-1.5">
+                <div class="w-7 h-7 rounded-xl bg-copper-500/15 border border-copper-400/30 flex items-center justify-center text-copper-300 text-xs">
+                  ★
+                </div>
+                <h3 class="font-semibold text-sm text-ivory-100">Your favourite barber</h3>
+              </div>
+              <p class="text-xs text-neutral-400 leading-relaxed pl-10">
+                Keep seeing the barber you trust. Daniel or Sean is assigned to your cadence automatically.
+              </p>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="bg-charcoal-850 p-4 rounded-2xl border border-stoneBorder/90">
+              <div class="flex items-center gap-3 mb-1.5">
+                <div class="w-7 h-7 rounded-xl bg-copper-500/15 border border-copper-400/30 flex items-center justify-center text-copper-300 text-xs">
+                  ↻
+                </div>
+                <h3 class="font-semibold text-sm text-ivory-100">Your own rhythm</h3>
+              </div>
+              <p class="text-xs text-neutral-400 leading-relaxed pl-10">
+                Select every 2, 3, 4, 5, or 6 weeks. Life happens: reschedule or skip a slot at zero penalty.
+              </p>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="bg-charcoal-850 p-4 rounded-2xl border border-stoneBorder/90">
+              <div class="flex items-center gap-3 mb-1.5">
+                <div class="w-7 h-7 rounded-xl bg-copper-500/15 border border-copper-400/30 flex items-center justify-center text-copper-300 text-xs">
+                  ⚡
+                </div>
+                <h3 class="font-semibold text-sm text-ivory-100">First in line</h3>
+              </div>
+              <p class="text-xs text-neutral-400 leading-relaxed pl-10">
+                Access exclusive priority appointments released before general public booking opens.
+              </p>
+            </div>
+          </div>
+
+          <!-- Membership Pricing breakdown note -->
+          <div class="p-4 rounded-2xl bg-charcoal-950/70 border border-stoneBorder text-xs space-y-2">
+            <div class="flex justify-between items-center text-neutral-300">
+              <span>Priority Access Membership</span>
+              <span class="font-semibold text-ivory-50">€5.00 / month</span>
+            </div>
+            <div class="flex justify-between items-center text-neutral-400 text-[11px]">
+              <span>Haircuts (Daniel or Sean)</span>
+              <span>€25.00 charged upon visit</span>
+            </div>
+            <div class="pt-2 border-t border-stoneBorder/50 text-[10px] text-neutral-500">
+              Renews monthly. Haircuts charged separately at the shop's standard rate.
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <button onclick="navigate('join-rhythm')" class="w-full py-4 rounded-2xl copper-sheen text-charcoal-950 font-bold text-sm shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <span>Select Your Rhythm & Barber</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </button>
+        </div>
+      `;
+    }
+
+    /* =====================================================================
+       SCREEN 3: CHOOSE RHYTHM & PREFERRED BARBER
+       ===================================================================== */
+    function renderChooseRhythmScreen() {
+      const frequencies = [2, 3, 4, 5, 6];
+      const selectedWeeks = pendingOnboarding.rhythmWeeks;
+      const selectedBarber = appState.barbers.find(b => b.id === pendingOnboarding.barberId) || appState.barbers[0];
+
+      return `
+        <div class="screen-fade px-5 py-4 pb-12 space-y-6">
+          <div class="flex items-center justify-between">
+            <button onclick="navigate('membership')" class="text-xs text-neutral-400 hover:text-ivory-100 py-1">
+              ← Back
+            </button>
+            <span class="text-[11px] uppercase tracking-widest text-copper-400 font-semibold">Step 1 of 2</span>
+            <div class="w-6"></div>
+          </div>
+
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-ivory-50">Choose your rhythm</h2>
+            <p class="text-xs text-neutral-400 mt-1">
+              How often do you like keeping your hair sharp?
+            </p>
+          </div>
+
+          <!-- Rhythm Pill Selector -->
+          <div class="space-y-2">
+            <label class="text-[11px] uppercase font-semibold text-neutral-400 tracking-wider">Haircut Interval</label>
+            <div class="grid grid-cols-5 gap-1.5">
+              ${frequencies.map(weeks => {
+                const isActive = weeks === selectedWeeks;
+                return `
+                  <button 
+                    type="button"
+                    onclick="setPendingRhythm(${weeks})"
+                    class="py-3 px-1 rounded-xl text-center border transition-all ${
+                      isActive 
+                        ? 'copper-sheen text-charcoal-950 font-bold border-copper-400 shadow-md scale-[1.02]' 
+                        : 'bg-charcoal-850 text-neutral-300 border-stoneBorder hover:border-neutral-500'
+                    }">
+                    <span class="block text-base leading-none font-serif font-bold">${weeks}</span>
+                    <span class="block text-[9px] uppercase tracking-tight mt-1 opacity-80">Wks</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+            <p class="text-[10px] text-neutral-500 text-center pt-0.5">
+              Most clients prefer every 4 weeks. You can adjust this anytime.
+            </p>
+          </div>
+
+          <!-- Barber Selection -->
+          <div class="space-y-2 pt-1">
+            <label class="text-[11px] uppercase font-semibold text-neutral-400 tracking-wider">Dedicated Barber</label>
+            <div class="space-y-2">
+              ${appState.barbers.map(barber => {
+                const isSelected = barber.id === pendingOnboarding.barberId;
+                return `
+                  <div 
+                    onclick="setPendingBarber('${barber.id}')"
+                    class="p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected 
+                        ? 'border-copper-400/80 bg-copper-500/10' 
+                        : 'border-stoneBorder bg-charcoal-850 hover:border-neutral-600'
+                    }">
+                    <div class="flex items-center gap-3">
+                      <img src="${barber.image}" alt="${barber.name}" class="w-11 h-11 rounded-full object-cover border border-stoneBorder/80">
+                      <div>
+                        <div class="text-xs font-semibold text-ivory-100">${barber.name}</div>
+                        <div class="text-[10px] text-neutral-400">${barber.title}</div>
+                      </div>
+                    </div>
+                    <div class="w-5 h-5 rounded-full border flex items-center justify-center ${
+                      isSelected ? 'border-copper-400 bg-copper-400 text-charcoal-950' : 'border-neutral-600'
+                    }">
+                      ${isSelected ? '✓' : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Preferred Slot Windows -->
+          <div class="space-y-2 pt-1">
+            <label class="text-[11px] uppercase font-semibold text-neutral-400 tracking-wider">Preferred Window</label>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              ${['Saturday Morning', 'Saturday Afternoon', 'Thursday Evening', 'Friday Afternoon'].map(slotTime => {
+                const isSel = pendingOnboarding.preferredDayTime === slotTime;
+                return `
+                  <button 
+                    onclick="setPendingWindow('${slotTime}')"
+                    class="py-2.5 px-3 rounded-xl border text-left text-xs transition-all ${
+                      isSel ? 'border-copper-400/80 bg-copper-500/15 text-ivory-50 font-medium' : 'border-stoneBorder bg-charcoal-850 text-neutral-400'
+                    }">
+                    ${slotTime}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Suggested Next Haircut Projection Indicator -->
+          <div class="bg-charcoal-950/80 p-3.5 rounded-2xl border border-stoneBorder text-xs space-y-1">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-copper-400 block">Indicative Next Appointment</span>
+            <div class="text-ivory-100 font-medium">Saturday, 21 Nov 2026 · 10:00 AM</div>
+            <div class="text-[11px] text-neutral-400">With ${selectedBarber.name} (${selectedWeeks} weeks cycle)</div>
+          </div>
+
+          <!-- Action -->
+          <button onclick="navigate('checkout')" class="w-full py-4 rounded-2xl copper-sheen text-charcoal-950 font-bold text-sm shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <span>Continue to Checkout</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </button>
+        </div>
+      `;
+    }
+
+    function setPendingRhythm(weeks) {
+      pendingOnboarding.rhythmWeeks = weeks;
+      renderCurrentScreen();
+    }
+    function setPendingBarber(id) {
+      pendingOnboarding.barberId = id;
+      renderCurrentScreen();
+    }
+    function setPendingWindow(timeStr) {
+      pendingOnboarding.preferredDayTime = timeStr;
+      renderCurrentScreen();
+    }
+
+    /* =====================================================================
+       SCREEN 4: MEMBERSHIP CHECKOUT & SIMULATED ACTIVATION
+       ===================================================================== */
+    function renderCheckoutScreen() {
+      const barber = appState.barbers.find(b => b.id === pendingOnboarding.barberId) || appState.barbers[0];
+
+      return `
+        <div class="screen-fade px-5 py-4 pb-12 space-y-6">
+          <div class="flex items-center justify-between">
+            <button onclick="navigate('join-rhythm')" class="text-xs text-neutral-400 hover:text-ivory-100 py-1">
+              ← Change Details
+            </button>
+            <span class="text-[11px] uppercase tracking-widest text-copper-400 font-semibold">Simulated Activation</span>
+            <div class="w-6"></div>
+          </div>
+
+          <div>
+            <h2 class="font-serif text-2xl font-bold text-ivory-50">Activate Membership</h2>
+            <p class="text-xs text-neutral-400 mt-1">
+              Review your bespoke barbershop membership plan.
+            </p>
+          </div>
+
+          <!-- Plan Summary Card -->
+          <div class="bg-charcoal-850 rounded-2xl border border-stoneBorder p-4 space-y-3.5">
+            <div class="flex justify-between items-center pb-3 border-b border-stoneBorder">
+              <div>
+                <span class="text-xs font-bold text-ivory-100 block">Priority Club Dublin</span>
+                <span class="text-[11px] text-neutral-400">The Grafton Grooming Co.</span>
+              </div>
+              <span class="badge-copper px-2.5 py-1 rounded-full text-xs font-serif font-bold text-copper-300">
+                €5.00 / mo
+              </span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between text-neutral-300">
+                <span class="text-neutral-400">Preferred Barber:</span>
+                <span class="font-medium text-ivory-100">${barber.name}</span>
+              </div>
+              <div class="flex justify-between text-neutral-300">
+                <span class="text-neutral-400">Haircut Cadence:</span>
+                <span class="font-medium text-ivory-100">Every ${pendingOnboarding.rhythmWeeks} Weeks</span>
+              </div>
+              <div class="flex justify-between text-neutral-300">
+                <span class="text-neutral-400">Preferred Window:</span>
+                <span class="font-medium text-ivory-100">${pendingOnboarding.preferredDayTime}</span>
+              </div>
+              <div class="flex justify-between text-neutral-300">
+                <span class="text-neutral-400">First Haircut Slot:</span>
+                <span class="font-medium text-copper-300">Sat, 21 Nov · 10:00 AM</span>
+              </div>
+              <div class="flex justify-between text-neutral-300 pt-1 border-t border-stoneBorder/50 text-[11px]">
+                <span class="text-neutral-400">Haircuts on visit:</span>
+                <span class="text-neutral-300">€25.00 per service</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alpha Simulation Disclaimer -->
+          <div class="p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200/90 leading-relaxed">
+            <div class="font-bold flex items-center gap-1.5 text-amber-200 mb-0.5">
+              <span>ⓘ</span> Alpha Validation Sandbox
+            </div>
+            This is a simulated demo transaction. No real card is stored or debited. Clicking activate will create your active Priority member profile.
+          </div>
+
+          <!-- Payment Mock Input -->
+          <div class="bg-charcoal-850 p-3.5 rounded-2xl border border-stoneBorder space-y-2">
+            <span class="text-[10px] uppercase tracking-wider text-neutral-400 font-medium block">Simulated Payment Method</span>
+            <div class="flex items-center justify-between text-xs text-neutral-300">
+              <div class="flex items-center gap-2">
+                <span class="text-base">💳</span>
+                <span>Demo Apple Pay / Revolut Pay</span>
+              </div>
+              <span class="text-emerald-400 text-[10px] font-medium">Ready</span>
+            </div>
+          </div>
+
+          <!-- Activation Button -->
+          <button onclick="confirmActivateMembership()" class="w-full py-4 rounded-2xl copper-sheen text-charcoal-950 font-bold text-sm shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <span>Activate Priority Membership (€5/mo)</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function confirmActivateMembership() {
+      // Apply updates to appState
+      appState.customer.isMember = true;
+      appState.customer.membershipStatus = 'active';
+      appState.customer.preferredBarberId = pendingOnboarding.barberId;
+      appState.customer.rhythmWeeks = pendingOnboarding.rhythmWeeks;
+      appState.customer.preferredSlotTime = pendingOnboarding.preferredDayTime;
+      
+      const barber = appState.barbers.find(b => b.id === pendingOnboarding.barberId) || appState.barbers[0];
+      appState.currentAppointment.barberId = barber.id;
+      appState.currentAppointment.barberName = barber.name;
+      appState.currentAppointment.role = barber.title.split('&')[0];
+      appState.currentAppointment.status = "confirmed";
+
+      saveState();
+      showToast("Priority Membership Activated! Welcome, " + appState.customer.name.split(' ')[0]);
+      navigate('home');
+    }
+
+    /* =====================================================================
+       SCREEN 5: SIGNATURE MEMBER HOME SCREEN
+       ===================================================================== */
+    function renderMemberHomeScreen() {
+      const c = appState.customer;
+      const apt = appState.currentAppointment;
+      const hasUpcoming = apt && apt.status === 'confirmed';
+
+      return `
+        <div class="screen-fade px-5 py-4 pb-12 space-y-6">
+          
+          <!-- Top greeting & Membership Status Badge -->
+          <div class="flex justify-between items-start pt-1">
+            <div>
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="text-xs text-neutral-400">Good morning,</span>
+                <span class="w-1.5 h-1.5 rounded-full ${c.membershipStatus === 'active' ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
+              </div>
+              <h1 class="font-serif text-2xl font-bold text-ivory-50 tracking-tight">
+                ${c.name.split(' ')[0]}
+              </h1>
+            </div>
+
+            <!-- Priority Foil Badge -->
+            <button onclick="navigate('membership')" class="badge-copper px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-sm text-left active:scale-95 transition-all">
+              <span class="text-amber-400 text-xs">★</span>
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-copper-300 block leading-tight">Priority Member</span>
+                <span class="text-[9px] text-neutral-400 block">${c.membershipStatus === 'active' ? 'Cadence: ' + c.rhythmWeeks + ' wks' : 'Paused'}</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Hero Appointment Card -->
+          <div class="relative overflow-hidden bg-charcoal-850 rounded-[28px] border border-stoneBorder shadow-xl p-5">
+            <!-- Subtle accent glow -->
+            <div class="absolute -right-12 -top-12 w-36 h-36 bg-copper-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[11px] uppercase tracking-wider font-semibold text-copper-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-copper-400"></span>
+                Your Next Haircut
+              </span>
+              <span class="text-[11px] bg-charcoal-900 border border-stoneBorder px-2.5 py-0.5 rounded-full text-neutral-300">
+                Priority Reserved
+              </span>
+            </div>
+
+            ${hasUpcoming ? `
+              <!-- Confirmed Appointment Info -->
+              <div class="space-y-3">
+                <div>
+                  <div class="font-serif text-2xl font-bold text-ivory-50 tracking-tight">
+                    ${apt.dateString.split(',')[0]}, ${apt.dateString.split(',')[1]}
+                  </div>
+                  <div class="text-lg text-copper-300 font-medium mt-0.5">
+                    ${apt.time}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2 pb-1 border-t border-stoneBorder/60">
+                  <div class="w-10 h-10 rounded-full bg-charcoal-700 border border-stoneBorder flex items-center justify-center font-serif text-sm text-copper-300 font-bold">
+                    ${apt.barberName ? apt.barberName.split(' ').map(n=>n[0]).join('') : 'DR'}
+                  </div>
+                  <div>
+                    <div class="text-xs font-semibold text-ivory-100">With ${apt.barberName}</div>
+                    <div class="text-[10px] text-neutral-400">${apt.role} · Dublin 2</div>
+                  </div>
+                </div>
+
+                <!-- Immediate Action Buttons on Card -->
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                  <button onclick="openRescheduleModal()" class="py-2.5 px-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-ivory-200 border border-stoneBorder text-xs font-medium active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    <span>Reschedule</span>
+                  </button>
+                  <button onclick="openSkipModal()" class="py-2.5 px-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-neutral-300 border border-stoneBorder text-xs font-medium active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    <span>Skip this cut</span>
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <!-- Empty state: haircut skipped or completed -->
+              <div class="text-center py-5 space-y-2">
+                <span class="text-2xl">✂️</span>
+                <p class="text-xs text-neutral-300 font-medium">No upcoming slot booked.</p>
+                <p class="text-[11px] text-neutral-500">Your membership is active. Pick a priority slot whenever you are ready.</p>
+                <button onclick="navigate('booking')" class="mt-2 py-2.5 px-5 rounded-xl copper-sheen text-charcoal-950 font-bold text-xs">
+                  Browse Priority Slots
+                </button>
+              </div>
+            `}
+          </div>
+
+          <!-- Quick Action Tiles -->
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="openAdjustRhythmModal()" class="p-4 rounded-2xl bg-charcoal-850 hover:bg-charcoal-800 border border-stoneBorder text-left transition-all active:scale-[0.98]">
+              <div class="w-8 h-8 rounded-xl bg-copper-500/15 text-copper-300 flex items-center justify-center text-sm font-semibold mb-2">
+                ↻
+              </div>
+              <span class="text-xs font-semibold text-ivory-100 block">Change Rhythm</span>
+              <span class="text-[10px] text-neutral-400 mt-0.5 block">Currently every ${c.rhythmWeeks} weeks</span>
+            </button>
+
+            <button onclick="navigate('booking')" class="p-4 rounded-2xl bg-charcoal-850 hover:bg-charcoal-800 border border-stoneBorder text-left transition-all active:scale-[0.98]">
+              <div class="w-8 h-8 rounded-xl bg-copper-500/15 text-copper-300 flex items-center justify-center text-sm font-semibold mb-2">
+                ⚡
+              </div>
+              <span class="text-xs font-semibold text-ivory-100 block">Priority Slots</span>
+              <span class="text-[10px] text-neutral-400 mt-0.5 block">Exclusive advance access</span>
+            </button>
+          </div>
+
+          <!-- Membership Snapshot & Settings Drawer Trigger -->
+          <div class="p-4 rounded-2xl bg-charcoal-950/80 border border-stoneBorder flex items-center justify-between">
+            <div class="space-y-0.5">
+              <span class="text-xs font-semibold text-ivory-100 block">Priority Plan Settings</span>
+              <span class="text-[10px] text-neutral-400 block">Next renewal: ${c.nextRenewalDate} (€5.00)</span>
+            </div>
+            <button onclick="openManageMembershipModal()" class="text-xs text-copper-400 hover:text-copper-300 font-medium py-1 px-2 border border-copper-400/30 rounded-lg">
+              Manage →
+            </button>
+          </div>
+
+          <!-- Ireland Local Shop Info -->
+          <div class="text-center pt-2 text-[11px] text-neutral-500">
+            The Grafton Grooming Co. · 42 South William St, Dublin 2
+          </div>
+
+        </div>
+      `;
+    }
+
+    /* =====================================================================
+       SCREEN 6: PRIORITY APPOINTMENT CALENDAR & BOOKING
+       ===================================================================== */
+    function renderPriorityBookingScreen() {
+      const isMember = appState.customer.isMember && appState.customer.membershipStatus === 'active';
+      const visibleSlots = appState.slotsCatalog.filter(s => s.date === selectedBookingDate);
+
+      return `
+        <div class="screen-fade px-5 py-4 pb-12 space-y-5">
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-serif text-2xl font-bold text-ivory-50">Appointment Slots</h2>
+              <p class="text-xs text-neutral-400 mt-0.5">
+                ${isMember ? '★ Priority early-release slots unlocked' : 'General public availability'}
+              </p>
+            </div>
+            <span class="text-xs ${isMember ? 'badge-copper text-copper-300' : 'bg-charcoal-800 text-neutral-400'} px-2.5 py-1 rounded-full">
+              ${isMember ? 'Priority Access' : 'Standard'}
+            </span>
+          </div>
+
+          <!-- Non-member banner if not subscribed -->
+          ${!isMember ? `
+            <div class="p-3.5 rounded-2xl badge-copper flex items-center justify-between">
+              <div class="space-y-0.5">
+                <span class="text-xs font-bold text-copper-300 block">Unlock Priority Slots</span>
+                <span class="text-[10px] text-neutral-300 block">Priority slots are reserved for members for 7 days.</span>
+              </div>
+              <button onclick="navigate('membership')" class="px-3 py-1.5 rounded-xl copper-sheen text-charcoal-950 text-xs font-bold shrink-0">
+                Join €5/mo
+              </button>
+            </div>
+          ` : ''}
+
+          <!-- Day Horizontal Tabs -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Select Date</span>
+            <div class="flex gap-2 overflow-x-auto pb-1">
+              ${appState.bookingDays.map(d => {
+                const isSelected = d.fullDate === selectedBookingDate;
+                return `
+                  <button 
+                    onclick="selectBookingDay('${d.fullDate}')"
+                    class="py-2 px-3 min-w-[54px] rounded-2xl border text-center transition-all ${
+                      isSelected 
+                        ? 'copper-sheen text-charcoal-950 font-bold border-copper-400' 
+                        : 'bg-charcoal-850 text-neutral-300 border-stoneBorder hover:border-neutral-500'
+                    }">
+                    <span class="block text-[10px] uppercase font-sans">${d.dayLabel}</span>
+                    <span class="block text-base font-serif font-bold leading-tight">${d.dateNum}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Slots List -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between text-[11px] text-neutral-400">
+              <span>Available Times · ${selectedBookingDate.split(',')[0]}</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-copper-400"></span> Priority Slot</span>
+            </div>
+
+            <div class="space-y-2">
+              ${visibleSlots.length > 0 ? visibleSlots.map(slot => {
+                const barber = appState.barbers.find(b => b.id === slot.barberId) || appState.barbers[0];
+                const isMyCurrent = slot.bookedByMe;
+
+                return `
+                  <div class="p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                    slot.booked && !isMyCurrent
+                      ? 'bg-charcoal-950/60 border-stoneBorder/40 opacity-50'
+                      : slot.isPriority 
+                        ? 'bg-charcoal-850 border-copper-500/40' 
+                        : 'bg-charcoal-850 border-stoneBorder'
+                  }">
+                    <div class="flex items-center gap-3">
+                      <div class="text-center font-serif text-sm font-bold text-ivory-100 min-w-[65px]">
+                        ${slot.time}
+                      </div>
+                      <div class="border-l border-stoneBorder pl-3">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-semibold text-ivory-100">${barber.name.split(' ')[0]}</span>
+                          ${slot.isPriority ? `
+                            <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-copper-500/20 text-copper-300 font-medium">Priority</span>
+                          ` : `
+                            <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400">General</span>
+                          `}
+                        </div>
+                        <span class="text-[10px] text-neutral-400 block">${barber.title.split('&')[0]}</span>
+                      </div>
+                    </div>
+
+                    <!-- Slot Action Button -->
+                    <div>
+                      ${isMyCurrent ? `
+                        <span class="text-[11px] font-semibold text-copper-300 bg-copper-500/20 px-3 py-1.5 rounded-xl border border-copper-400/40">
+                          Your Slot ✓
+                        </span>
+                      ` : slot.booked ? `
+                        <span class="text-xs text-neutral-500 py-1 px-3">
+                          Reserved
+                        </span>
+                      ` : (slot.isPriority && !isMember) ? `
+                        <button onclick="promptPriorityUnlock()" class="text-[11px] font-medium text-copper-300 bg-charcoal-800 hover:bg-charcoal-700 border border-copper-400/30 px-3 py-1.5 rounded-xl">
+                          🔒 Priority Only
+                        </button>
+                      ` : `
+                        <button onclick="bookSpecificSlot('${slot.id}')" class="text-xs font-semibold text-charcoal-950 copper-sheen px-3.5 py-1.5 rounded-xl shadow-md active:scale-95 transition-transform">
+                          Book Slot
+                        </button>
+                      `}
+                    </div>
+                  </div>
+                `;
+              }).join('') : `
+                <div class="text-center py-8 text-neutral-500 text-xs bg-charcoal-850/40 rounded-2xl border border-stoneBorder">
+                  No slots currently available on this day.
+                </div>
+              `}
+            </div>
+          </div>
+
+          <p class="text-[10px] text-neutral-500 text-center leading-relaxed">
+            Rule of fairness: Members never displace existing client appointments. Haircuts are €25 charged upon service.
+          </p>
+
+        </div>
+      `;
+    }
+
+    function selectBookingDay(dateStr) {
+      selectedBookingDate = dateStr;
+      renderCurrentScreen();
+    }
+
+    function bookSpecificSlot(slotId) {
+      const slot = appState.slotsCatalog.find(s => s.id === slotId);
+      if (!slot) return;
+
+      const barber = appState.barbers.find(b => b.id === slot.barberId) || appState.barbers[0];
+
+      // Mark old appointment slot free if any
+      appState.slotsCatalog.forEach(s => {
+        if (s.bookedByMe) {
+          s.bookedByMe = false;
+          s.booked = false;
+        }
+      });
+
+      // Mark slot booked
+      slot.booked = true;
+      slot.bookedByMe = true;
+
+      // Update current appointment in state
+      appState.currentAppointment = {
+        id: "apt-" + Date.now(),
+        dateString: slot.date,
+        time: slot.time,
+        barberId: barber.id,
+        barberName: barber.name,
+        role: barber.title.split('&')[0],
+        isPrioritySlot: slot.isPriority,
+        status: "confirmed"
+      };
+
+      saveState();
+      showToast(`Confirmed! ${slot.date.split(',')[0]} at ${slot.time} with ${barber.name.split(' ')[0]}`);
+      navigate('home');
+    }
+
+    function promptPriorityUnlock() {
+      showToast("Priority slots require active membership. Join for €5/mo.");
+      setTimeout(() => navigate('membership'), 600);
+    }
+
+    /* =====================================================================
+       MODALS & DRAWERS (Skip, Reschedule, Adjust Rhythm, Manage Membership)
+       ===================================================================== */
+    function openModal(contentHtml) {
+      const container = document.getElementById('modalContainer');
+      const inner = document.getElementById('modalInner');
+      inner.innerHTML = contentHtml;
+      container.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      const container = document.getElementById('modalContainer');
+      container.classList.add('hidden');
+    }
+
+    // Modal 1: Adjust Rhythm
+    function openAdjustRhythmModal() {
+      const frequencies = [2, 3, 4, 5, 6];
+      const current = appState.customer.rhythmWeeks;
+
+      openModal(`
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-serif text-xl font-bold text-ivory-50">Adjust Haircut Rhythm</h3>
+            <button onclick="closeModal()" class="text-neutral-400 hover:text-ivory-100 text-sm">✕</button>
+          </div>
+
+          <p class="text-xs text-neutral-300 leading-relaxed">
+            Changing your cadence updates your automated scheduling rhythm. Existing confirmed appointments remain unchanged.
+          </p>
+
+          <div class="grid grid-cols-5 gap-1.5 py-1">
+            ${frequencies.map(w => `
+              <button 
+                onclick="saveAdjustedRhythm(${w})" 
+                class="py-3 rounded-xl border text-center transition-all ${
+                  w === current 
+                    ? 'copper-sheen text-charcoal-950 font-bold border-copper-400 shadow-md' 
+                    : 'bg-charcoal-800 text-neutral-300 border-stoneBorder hover:border-neutral-500'
+                }">
+                <span class="block text-base font-serif font-bold">${w}</span>
+                <span class="block text-[9px] uppercase mt-0.5">Wks</span>
+              </button>
+            `).join('')}
+          </div>
+
+          <div class="p-3 rounded-xl bg-charcoal-900 border border-stoneBorder text-[11px] text-neutral-400">
+            Selected: <span class="text-ivory-100 font-semibold">Every ${current} weeks</span>. After each haircut, your next slot is automatically projected ahead by this interval.
+          </div>
+
+          <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-charcoal-800 text-ivory-200 border border-stoneBorder text-xs font-semibold">
+            Done
+          </button>
+        </div>
+      `);
+    }
+
+    function saveAdjustedRhythm(weeks) {
+      appState.customer.rhythmWeeks = weeks;
+      saveState();
+      showToast(`Haircut cadence updated to every ${weeks} weeks`);
+      closeModal();
+      renderCurrentScreen();
+    }
+
+    // Modal 2: Skip this haircut
+    function openSkipModal() {
+      const apt = appState.currentAppointment;
+      const weeks = appState.customer.rhythmWeeks;
+
+      openModal(`
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-serif text-xl font-bold text-ivory-50">Skip Next Haircut</h3>
+            <button onclick="closeModal()" class="text-neutral-400 hover:text-ivory-100 text-sm">✕</button>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-charcoal-900 border border-stoneBorder text-xs space-y-1">
+            <span class="text-neutral-400 text-[10px] uppercase font-bold tracking-wider">Currently Scheduled:</span>
+            <div class="font-serif text-base font-bold text-ivory-100">${apt.dateString} · ${apt.time}</div>
+            <div class="text-[11px] text-copper-300">With ${apt.barberName}</div>
+          </div>
+
+          <div class="text-xs text-neutral-300 space-y-2 leading-relaxed">
+            <p>
+              Skipping releases this slot for other clients and pushes your next suggested cut forward by <strong>${weeks} weeks</strong>.
+            </p>
+            <div class="p-3 rounded-xl bg-charcoal-800/80 border border-copper-400/20 text-[11px] text-neutral-300">
+              <span class="text-copper-300 font-bold">Transparent note:</span> Skipping an individual haircut does not pause your €5/mo Priority membership.
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2">
+            <button onclick="confirmSkipHaircut()" class="w-full py-3.5 rounded-xl copper-sheen text-charcoal-950 font-bold text-xs shadow-lg active:scale-95 transition-all">
+              Confirm & Skip Haircut
+            </button>
+            <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-charcoal-800 text-neutral-300 border border-stoneBorder text-xs font-medium">
+              Keep Appointment
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function confirmSkipHaircut() {
+      // Free current slot in catalog
+      appState.slotsCatalog.forEach(s => {
+        if (s.bookedByMe) {
+          s.bookedByMe = false;
+          s.booked = false;
+        }
+      });
+
+      // Advance appointment placeholder
+      appState.currentAppointment.status = "skipped";
+      saveState();
+      closeModal();
+      showToast("Haircut skipped. Slot released for other clients.");
+      renderCurrentScreen();
+    }
+
+    // Modal 3: Reschedule directly
+    function openRescheduleModal() {
+      closeModal();
+      // Route user to booking with informative banner
+      showToast("Select any alternative priority or general slot to reschedule");
+      navigate('booking');
+    }
+
+    // Modal 4: Manage Membership (Pause, Cancel, Renewal view)
+    function openManageMembershipModal() {
+      const c = appState.customer;
+
+      openModal(`
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-serif text-xl font-bold text-ivory-50">Manage Membership</h3>
+            <button onclick="closeModal()" class="text-neutral-400 hover:text-ivory-100 text-sm">✕</button>
+          </div>
+
+          <!-- Status badge -->
+          <div class="p-3.5 rounded-2xl bg-charcoal-900 border border-stoneBorder flex items-center justify-between text-xs">
+            <div>
+              <span class="text-neutral-400 text-[10px] uppercase font-bold tracking-wider block">Status</span>
+              <span class="font-semibold text-ivory-100 capitalize">${c.membershipStatus} Membership</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${c.membershipStatus === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-neutral-700 text-neutral-400'}">
+              ${c.membershipStatus === 'active' ? 'Active' : 'Paused'}
+            </span>
+          </div>
+
+          <!-- Financial Snapshot -->
+          <div class="space-y-2 text-xs text-neutral-300 bg-charcoal-800/50 p-3.5 rounded-2xl border border-stoneBorder/70">
+            <div class="flex justify-between">
+              <span class="text-neutral-400">Monthly recurring fee:</span>
+              <span class="font-medium text-ivory-100">€${c.simulatedMonthlyFee.toFixed(2)} / month</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-neutral-400">Next renewal date:</span>
+              <span class="font-medium text-ivory-100">${c.nextRenewalDate}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-neutral-400">Cadence:</span>
+              <span class="font-medium text-ivory-100">Every ${c.rhythmWeeks} weeks</span>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="space-y-2 pt-1">
+            ${c.membershipStatus === 'active' ? `
+              <button onclick="togglePauseMembership()" class="w-full py-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-amber-300 border border-amber-500/30 text-xs font-semibold active:scale-95 transition-all">
+                Pause Membership (Suspend Renewals)
+              </button>
+            ` : `
+              <button onclick="togglePauseMembership()" class="w-full py-3 rounded-xl copper-sheen text-charcoal-950 text-xs font-bold active:scale-95 transition-all">
+                Resume Priority Membership
+              </button>
+            `}
+
+            <button onclick="cancelMembershipModalAction()" class="w-full py-3 rounded-xl bg-charcoal-900 hover:bg-rose-950/30 text-rose-400 border border-rose-500/20 text-xs font-medium active:scale-95 transition-all">
+              Cancel Membership
+            </button>
+          </div>
+
+          <p class="text-[10px] text-center text-neutral-500">
+            Cancellation stops future renewal charges at the end of the current billing month.
+          </p>
+        </div>
+      `);
+    }
+
+    function togglePauseMembership() {
+      if (appState.customer.membershipStatus === 'active') {
+        appState.customer.membershipStatus = 'paused';
+        showToast("Membership paused. Future billing suspended.");
+      } else {
+        appState.customer.membershipStatus = 'active';
+        showToast("Welcome back! Priority access re-activated.");
+      }
+      saveState();
+      closeModal();
+      renderCurrentScreen();
+    }
+
+    function cancelMembershipModalAction() {
+      appState.customer.isMember = false;
+      appState.customer.membershipStatus = 'cancelled';
+      saveState();
+      closeModal();
+      showToast("Membership cancelled. Switched to visitor mode.");
+      navigate('landing');
+    }
+
+    /* =====================================================================
+       TOAST UTILITY
+       ===================================================================== */
+    let toastTimeout = null;
+    function showToast(message) {
+      const toast = document.getElementById('toastNotification');
+      const msg = document.getElementById('toastMessage');
+      if (!toast || !msg) return;
+
+      msg.textContent = message;
+      toast.classList.remove('opacity-0', '-translate-y-20', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-20', 'pointer-events-none');
+      }, 3400);
+    }
+
+    /* =====================================================================
+       INITIALIZATION
+       ===================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      // Live system clock simulation
+      const timeElem = document.getElementById('systemTime');
+      const updateClock = () => {
+        const d = new Date();
+        timeElem.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      };
+      updateClock();
+      setInterval(updateClock, 30000);
+
+      // Render initial view
+      renderCurrentScreen();
+    });
+  </script>
+</body>
+</html>
